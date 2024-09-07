@@ -1,15 +1,18 @@
+import streamlit as st
+from llama_index.core import Document
+import nest_asyncio
+nest_asyncio.apply()
 import os
-import tempfile
-import hashlib
-import json
-from typing import List
+from llama_index.core import Document
 from llama_index.core.schema import TextNode
 from llama_parse import LlamaParse
-from llama_index.core import Document
-from llama_index.core import VectorStoreIndex
+from typing import List
+import json
+from llama_index.core import Settings
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
-import streamlit as st
+from llama_index.core import VectorStoreIndex
+import tempfile
 
 # Utility functions
 def get_text_nodes(json_list: List[dict]) -> List[TextNode]:
