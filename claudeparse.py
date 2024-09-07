@@ -20,7 +20,7 @@ llama_api = st.secrets["general"]["llama_api"]
 st.sidebar.header('Upload File')
 uploaded_file = st.sidebar.file_uploader("Upload PDF", type="pdf", key="pdf_file")
 
-tab1, tab2, tab3 = st.tabs(['Parse with Sonnet', 'Parse with GPT-4o', 'RAG Pipeline'])
+tab1, tab2, tab3 = st.tabs(['Parse with Anthropic-Sonnet-3.5', 'Parse with GPT-4o', 'RAG Pipeline'])
 
 def get_text_nodes(json_list: List[dict]):
     text_nodes = []
@@ -77,7 +77,7 @@ with tab1:
             
             os.remove(tmp_file_path)
         if 'docs_sonnet' in st.session_state:
-            st.sidebar.subheader('Read Parsed Content')
+            st.sidebar.subheader('Read Anthropic-sonnet-3.5 Parsed Content')
             max_pages = len(st.session_state.docs_sonnet) - 1
             page_number = st.sidebar.slider('Select Page', min_value=0, max_value=max_pages, value=0)
             
