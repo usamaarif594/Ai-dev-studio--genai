@@ -9,17 +9,14 @@ from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_parse import LlamaParse
 from llama_index.core import Document
-from llama_parse import LlamaParse
 from llama_index.core import SummaryIndex
 from llama_index.core import VectorStoreIndex
-from llama_index.llms.openai import OpenAI
 import nest_asyncio
 nest_asyncio.apply()
 import streamlit as st
 
 openapi = st.secrets["general"]["openapi"]
 llama_api = st.secrets["general"]["llama_api"]
-
 
 # Utility functions
 def get_text_nodes(json_list: List[dict]) -> List[TextNode]:
@@ -72,13 +69,22 @@ def get_file_hash(file) -> str:
 # Tabs setup
 tab1, tab2, tab3 = st.tabs(['GPT-4o Mini Parser', 'GPT-4o Parser', 'RAG Pipeline'])
 
+# File upload and session state management
+uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf", key="upload_pdf")
+
+if uploaded_file is not None:
+    file_hash = get_file_hash(uploaded_file)
+    if 'file_hash' not in st.session_state or st.session_state.file_hash != file_hash:
+        st.session_state.file_hash = file_hash
+        st.session_state.docs_mini = None
+        st.session_state.docs_gpt4o = None
+        st.session_state.response = None
+        st.session_state.metadata = None
+        st.experimental_rerun()  # Refresh the app
 
 # GPT-4o Mini Parser Tab
 with tab1:
     st.header("GPT-4o Mini Parser")
-
-    uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf", key="upload_pdf")
-
 
     if uploaded_file is not None:
         if st.button('Start Parsing with GPT-4o Mini', key='gptmini'):
@@ -104,8 +110,6 @@ with tab1:
                 st.write('GPT-4o Mini Parser Output', st.session_state.docs_mini[0].get_content(metadata_mode="all"))
         else:
             st.warning("No content was parsed from the document.")
-
-
 
 # GPT-4o Parser Tab
 with tab2:
@@ -139,9 +143,6 @@ with tab2:
     else:
         st.warning("No content was parsed from the document.")
 
-
-
-
 # RAG Pipeline Tab
 with tab3:
     st.header("RAG Pipeline")
@@ -163,46 +164,42 @@ with tab3:
             st.session_state.model_option = model_option
 
             if model_option == "GPT-4o Mini":
-                Settings.llm = OpenAI(model="gpt-4o-mini", api_key=openapi)
-                Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
-
-                # Load documents parsed by GPT-4o Mini from session state
-                if 'docs_mini' in st.session_state:
-                    docs_mini = st.session_state.docs_mini
+                if 'docs_mini' not in st.session_state:
+                    st.warning("Please parse the document using GPT-4o Mini first.")
                 else:
-                    docs_mini_dicts = load_jsonl("docs_openai-gpt-4o-mini.jsonl")
-                    docs_mini = [Document.model_validate(d) for d in docs_mini_dicts]
+                    Settings.llm = OpenAI(model="gpt-4o-mini", api_key=openapi)
+                    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
 
-                index_mini = VectorStoreIndex(docs_mini)
-                query_engine_mini = index_mini.as_query_engine(similarity_top_k=top_k)
+                    # Load documents parsed by GPT-4o Mini from session state
+                    docs_mini = st.session_state.docs_mini
+                    index_mini = VectorStoreIndex(docs_mini)
+                    query_engine_mini = index_mini.as_query_engine(similarity_top_k=top_k)
 
-                # Query the GPT-4o Mini engine
-                response_mini = query_engine_mini.query(user_query)
-                
-                # Save the response and metadata to session state
-                st.session_state.response = response_mini
-                st.session_state.metadata = response_mini.metadata
+                    # Query the GPT-4o Mini engine
+                    response_mini = query_engine_mini.query(user_query)
+                    
+                    # Save the response and metadata to session state
+                    st.session_state.response = response_mini
+                    st.session_state.metadata = response_mini.metadata
 
             elif model_option == "GPT-4o":
-                Settings.llm = OpenAI(model="gpt-4o", api_key=openapi)
-                Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
-
-                # Load documents parsed by GPT-4o from session state
-                if 'docs_gpt4o' in st.session_state:
-                    docs_gpt4o = st.session_state.docs_gpt4o
+                if 'docs_gpt4o' not in st.session_state:
+                    st.warning("Please parse the document using GPT-4o first.")
                 else:
-                    docs_gpt4o_dicts = load_jsonl("docs_openai-gpt4o.jsonl")
-                    docs_gpt4o = [Document.model_validate(d) for d in docs_gpt4o_dicts]
+                    Settings.llm = OpenAI(model="gpt-4o", api_key=openapi)
+                    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
 
-                index_gpt4o = VectorStoreIndex(docs_gpt4o)
-                query_engine_gpt4o = index_gpt4o.as_query_engine(similarity_top_k=top_k)
+                    # Load documents parsed by GPT-4o from session state
+                    docs_gpt4o = st.session_state.docs_gpt4o
+                    index_gpt4o = VectorStoreIndex(docs_gpt4o)
+                    query_engine_gpt4o = index_gpt4o.as_query_engine(similarity_top_k=top_k)
 
-                # Query the GPT-4o engine
-                response_gpt4o = query_engine_gpt4o.query(user_query)
+                    # Query the GPT-4o engine
+                    response_gpt4o = query_engine_gpt4o.query(user_query)
 
-                # Save the response and metadata to session state
-                st.session_state.response = response_gpt4o
-                st.session_state.metadata = response_gpt4o.metadata
+                    # Save the response and metadata to session state
+                    st.session_state.response = response_gpt4o
+                    st.session_state.metadata = response_gpt4o.metadata
 
         # Display the results from session state
         if st.session_state.response:
@@ -210,5 +207,8 @@ with tab3:
             st.write(st.session_state.response.response)
 
             st.subheader('Metadata')
-            for node_id, meta in st.session_state.metadata.items():
-                st.write(f"Node ID: {node_id} - Page: {meta['page']}") 
+            for node_id, metadata in st.session_state.metadata.items():
+                st.write(f"Node ID: {node_id}")
+                st.json(metadata)
+        else:
+            st.warning("No response available. Please run the RAG pipeline.")
