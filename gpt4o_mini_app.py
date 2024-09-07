@@ -73,20 +73,13 @@ def get_file_hash(file) -> str:
 # Tabs setup
 tab1, tab2, tab3 = st.tabs(['GPT-4o Mini Parser', 'GPT-4o Parser', 'RAG Pipeline'])
 
-# Check if a new file is uploaded
-if uploaded_file:
-    file_hash = get_file_hash(uploaded_file)
-    
-    if st.session_state.get('file_hash') != file_hash:
-        # Clear session state for documents if the file is new
-        st.session_state.clear()
-        st.session_state.file_hash = file_hash
 
 # GPT-4o Mini Parser Tab
 with tab1:
     st.header("GPT-4o Mini Parser")
 
-    uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf")
+    uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf", key="upload_pdf")
+
 
     if uploaded_file is not None:
         if st.button('Start Parsing with GPT-4o Mini', key='gptmini'):
