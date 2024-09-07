@@ -77,12 +77,10 @@ with tab1:
             
             os.remove(tmp_file_path)
         if 'docs_sonnet' in st.session_state:
-            st.sidebar.subheader('Read Anthropic-sonnet-3.5 Parsed Content')
+            st.subheader('Read Anthropic-sonnet-3.5 Parsed Content')
             max_pages = len(st.session_state.docs_sonnet) - 1
-            page_number = st.sidebar.slider('Select Page', min_value=0, max_value=max_pages, value=0)
-            
-            if st.sidebar.button('Show Page Content'):
-                st.write(st.session_state.docs_sonnet[page_number].get_content(metadata_mode="all"))
+            page_number = st.slider('Select Page', min_value=0, max_value=max_pages, value=0)
+            st.write(st.session_state.docs_sonnet[page_number].get_content(metadata_mode="all"))
     else:
         st.warning('Please upload a PDF file in the sidebar.')
 
@@ -103,12 +101,12 @@ with tab2:
             
             os.remove(tmp_file_path)
         if 'docs_gpt4o' in st.session_state:
-            st.sidebar.subheader('Read GPT-4o Parsed Content')
+            st.subheader('Read GPT-4o Parsed Content')
             max_pages_gpt4o = len(st.session_state.docs_gpt4o) - 1
-            page_number_gpt4o = st.sidebar.slider('Select Page for GPT-4o', min_value=0, max_value=max_pages_gpt4o, value=0, key='gpt4o_page_slider')
+            page_number_gpt4o = st..slider('Select Page for GPT-4o', min_value=0, max_value=max_pages_gpt4o, value=0, key='gpt4o_page_slider')
             
-            if st.sidebar.button('Show Page Content', key='ShowGPTContent'):
-                st.write(st.session_state.docs_gpt4o[page_number_gpt4o].get_content(metadata_mode="all"))
+            # if st.button('Show Page Content', key='ShowGPTContent'):
+            st.write(st.session_state.docs_gpt4o[page_number_gpt4o].get_content(metadata_mode="all"))
     else:
         st.warning('Please upload a PDF file in the sidebar.')
 
@@ -121,7 +119,7 @@ with tab3:
         # Allow user to select a model
         model_option = st.selectbox(
             'Select Model',
-            ['Sonnet', 'GPT-4o']
+            ['Anthropic-Sonnet-3.5', 'GPT-4o']
         )
 
         # Allow user to input their own query
