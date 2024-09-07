@@ -20,7 +20,7 @@ llama_api = st.secrets["general"]["llama_api"]
 st.sidebar.header('Upload File')
 uploaded_file = st.sidebar.file_uploader("Upload PDF", type="pdf", key="pdf_file")
 
-tab1, tab2, tab3 = st.tabs(['Upload & Parse with Sonnet', 'Parse with GPT-4o', 'RAG Pipeline'])
+tab1, tab2, tab3 = st.tabs(['Parse with Sonnet', 'Parse with GPT-4o', 'RAG Pipeline'])
 
 def get_text_nodes(json_list: List[dict]):
     text_nodes = []
@@ -66,22 +66,22 @@ with tab1:
 
     if uploaded_file is not None:
         if st.button('Start Parsing with Sonnet', key='Sonnet'):
-            st.subheader('Parsing Started...')
+            
             
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                 tmp_file.write(uploaded_file.read())
                 tmp_file_path = tmp_file.name
 
             st.session_state.docs_sonnet = parse_with_model("anthropic-sonnet-3.5", tmp_file_path)
-            st.subheader('Parsing Completed')
+            st.success('Parsing Completed')
             
             os.remove(tmp_file_path)
         if 'docs_sonnet' in st.session_state:
-            st.subheader('Read Parsed Content')
+            st.sidebar.subheader('Read Parsed Content')
             max_pages = len(st.session_state.docs_sonnet) - 1
-            page_number = st.slider('Select Page', min_value=0, max_value=max_pages, value=0)
+            page_number = st.sidebar.slider('Select Page', min_value=0, max_value=max_pages, value=0)
             
-            if st.button('Show Page Content'):
+            if st.sidebar.button('Show Page Content'):
                 st.write(st.session_state.docs_sonnet[page_number].get_content(metadata_mode="all"))
     else:
         st.warning('Please upload a PDF file in the sidebar.')
@@ -92,22 +92,22 @@ with tab2:
 
     if uploaded_file is not None:
         if st.button('Start Parsing with GPT-4o', key='GPT'):
-            st.subheader('Parsing Started')
+            
             
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                 tmp_file.write(uploaded_file.read())
                 tmp_file_path = tmp_file.name
 
             st.session_state.docs_gpt4o = parse_with_model("openai-gpt4o", tmp_file_path)
-            st.subheader('Parsing Completed')
+            st.success('Parsing Completed')
             
             os.remove(tmp_file_path)
         if 'docs_gpt4o' in st.session_state:
             st.subheader('Read GPT-4o Parsed Content')
             max_pages_gpt4o = len(st.session_state.docs_gpt4o) - 1
-            page_number_gpt4o = st.slider('Select Page for GPT-4o', min_value=0, max_value=max_pages_gpt4o, value=0, key='gpt4o_page_slider')
+            page_number_gpt4o = st.sidebar.slider('Select Page for GPT-4o', min_value=0, max_value=max_pages_gpt4o, value=0, key='gpt4o_page_slider')
             
-            if st.button('Show Page Content', key='ShowGPTContent'):
+            if st.sidebar.button('Show Page Content', key='ShowGPTContent'):
                 st.write(st.session_state.docs_gpt4o[page_number_gpt4o].get_content(metadata_mode="all"))
     else:
         st.warning('Please upload a PDF file in the sidebar.')
