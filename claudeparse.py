@@ -77,9 +77,9 @@ with tab1:
             
             os.remove(tmp_file_path)
         if 'docs_sonnet' in st.session_state:
-            st.subheader('Read Anthropic-sonnet-3.5 Parsed Content')
+            st.sidebar.subheader('Read Anthropic-sonnet-3.5 Parsed Content')
             max_pages = len(st.session_state.docs_sonnet) - 1
-            page_number = st.slider('Select Page', min_value=0, max_value=max_pages, value=0)
+            page_number = st.sidebar.slider('Select Page', min_value=0, max_value=max_pages, value=0)
             st.write(st.session_state.docs_sonnet[page_number].get_content(metadata_mode="all"))
     else:
         st.warning('Please upload a PDF file in the sidebar.')
