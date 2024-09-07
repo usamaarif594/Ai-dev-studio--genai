@@ -1,22 +1,15 @@
 import os
 import tempfile
 import hashlib
-from llama_index.core.schema import TextNode
-from typing import List
 import json
-from llama_index.core import Settings
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
+from typing import List
+from llama_index.core.schema import TextNode
 from llama_parse import LlamaParse
 from llama_index.core import Document
-from llama_index.core import SummaryIndex
 from llama_index.core import VectorStoreIndex
-import nest_asyncio
-nest_asyncio.apply()
+from llama_index.llms.openai import OpenAI
+from llama_index.embeddings.openai import OpenAIEmbedding
 import streamlit as st
-
-openapi = st.secrets["general"]["openapi"]
-llama_api = st.secrets["general"]["llama_api"]
 
 # Utility functions
 def get_text_nodes(json_list: List[dict]) -> List[TextNode]:
@@ -45,7 +38,7 @@ def load_jsonl(filename: str) -> List[dict]:
 def parse_with_model(model_name: str, tmp_file_path: str) -> List[Document]:
     parser = LlamaParse(
         result_type="markdown",
-        api_key=llama_api,
+        api_key=st.secrets["general"]["llama_api"],
         use_vendor_multimodal_model=True,
         vendor_multimodal_model_name=model_name,
     )
@@ -72,15 +65,30 @@ tab1, tab2, tab3 = st.tabs(['GPT-4o Mini Parser', 'GPT-4o Parser', 'RAG Pipeline
 # File upload and session state management
 uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf", key="upload_pdf")
 
+# Initialize session state variables if not already present
+if 'file_hash' not in st.session_state:
+    st.session_state.file_hash = None
+if 'docs_mini' not in st.session_state:
+    st.session_state.docs_mini = None
+if 'docs_gpt4o' not in st.session_state:
+    st.session_state.docs_gpt4o = None
+if 'response' not in st.session_state:
+    st.session_state.response = None
+if 'metadata' not in st.session_state:
+    st.session_state.metadata = None
+if 'model_option' not in st.session_state:
+    st.session_state.model_option = None
+
 if uploaded_file is not None:
     file_hash = get_file_hash(uploaded_file)
-    if 'file_hash' not in st.session_state or st.session_state.file_hash != file_hash:
+    if st.session_state.file_hash != file_hash:
         st.session_state.file_hash = file_hash
         st.session_state.docs_mini = None
         st.session_state.docs_gpt4o = None
         st.session_state.response = None
         st.session_state.metadata = None
-        st.experimental_rerun()  # Refresh the app
+        # Add a flag to force refresh
+        st.session_state.force_refresh = True
 
 # GPT-4o Mini Parser Tab
 with tab1:
@@ -101,7 +109,7 @@ with tab1:
             os.remove(tmp_file_path)
 
         # Display parsed content
-        if 'docs_mini' in st.session_state and st.session_state.docs_mini:
+        if st.session_state.docs_mini:
             num_pages = len(st.session_state.docs_mini)
             if num_pages > 1:
                 page = st.slider('Select page', min_value=0, max_value=num_pages - 1, value=0)
@@ -133,7 +141,7 @@ with tab2:
                 os.remove(tmp_file_path)
     
     # Display parsed content
-    if 'docs_gpt4o' in st.session_state and st.session_state.docs_gpt4o:
+    if st.session_state.docs_gpt4o:
         num_pages = len(st.session_state.docs_gpt4o)
         if num_pages > 1:
             page = st.slider('Select page', min_value=0, max_value=num_pages - 1, value=0, key='slider_gpt4o')
@@ -164,11 +172,11 @@ with tab3:
             st.session_state.model_option = model_option
 
             if model_option == "GPT-4o Mini":
-                if 'docs_mini' not in st.session_state:
+                if st.session_state.docs_mini is None:
                     st.warning("Please parse the document using GPT-4o Mini first.")
                 else:
-                    Settings.llm = OpenAI(model="gpt-4o-mini", api_key=openapi)
-                    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
+                    Settings.llm = OpenAI(model="gpt-4o-mini", api_key=st.secrets["general"]["openapi"])
+                    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=st.secrets["general"]["openapi"])
 
                     # Load documents parsed by GPT-4o Mini from session state
                     docs_mini = st.session_state.docs_mini
@@ -183,11 +191,11 @@ with tab3:
                     st.session_state.metadata = response_mini.metadata
 
             elif model_option == "GPT-4o":
-                if 'docs_gpt4o' not in st.session_state:
+                if st.session_state.docs_gpt4o is None:
                     st.warning("Please parse the document using GPT-4o first.")
                 else:
-                    Settings.llm = OpenAI(model="gpt-4o", api_key=openapi)
-                    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
+                    Settings.llm = OpenAI(model="gpt-4o", api_key=st.secrets["general"]["openapi"])
+                    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=st.secrets["general"]["openapi"])
 
                     # Load documents parsed by GPT-4o from session state
                     docs_gpt4o = st.session_state.docs_gpt4o
@@ -201,12 +209,9 @@ with tab3:
                     st.session_state.response = response_gpt4o
                     st.session_state.metadata = response_gpt4o.metadata
 
-        # Display the results from session state
         if st.session_state.response:
-            st.subheader('Response')
-            st.write(st.session_state.response.response)
-
-            st.subheader('Metadata')
+            st.write("Response:", st.session_state.response)
+            st.write("Metadata:")
             for node_id, metadata in st.session_state.metadata.items():
                 st.write(f"Node ID: {node_id}")
                 st.json(metadata)
