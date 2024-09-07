@@ -155,7 +155,7 @@ with tab2:
     else:
         st.warning("No content was parsed from the document.")
 
-# RAG Pipeline Tab
+
 # RAG Pipeline Tab
 with tab3:
     st.header("RAG Pipeline")
@@ -170,7 +170,7 @@ with tab3:
     user_query = st.text_input("Enter your query:")
 
     # Slider for top_k
-    top_k = st.slider('Select top_k value:', min_value=1, max_value=10, value=5)
+    top_k = st.slider('Select top_k value:', min_value=1, max_value=10, value=3)
 
     if uploaded_file and user_query:
         if st.button("Run RAG Pipeline") or st.session_state.get('model_option') != model_option:
