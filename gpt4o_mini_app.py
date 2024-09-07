@@ -64,11 +64,14 @@ tab1, tab2, tab3 = st.tabs(['GPT-4o Mini Parser', 'GPT-4o Parser', 'RAG Pipeline
 # GPT-4o Mini Parser Tab
 with tab1:
     st.header("GPT-4o Mini Parser")
+    
+    # Ensure uploaded_file is not None before proceeding
     if uploaded_file:
         # Create the temp directory if it doesn't exist
         os.makedirs("./temp", exist_ok=True)
         
         file_path = f"./temp/{uploaded_file.name}"
+        
         if 'docs_mini' not in st.session_state or st.session_state.get('uploaded_file_name') != uploaded_file.name:
             # Clear previous session state
             st.session_state.docs_mini = None
@@ -82,18 +85,21 @@ with tab1:
             if st.button("Start Parsing with GPT-4o Mini"):
                 st.session_state.docs_mini = parse_with_model("openai-gpt-4o-mini", file_path)
 
-        if 'docs_mini' in st.session_state:
+        if 'docs_mini' in st.session_state and st.session_state.docs_mini:
             page = st.slider('Select page', min_value=0, max_value=len(st.session_state.docs_mini)-1, value=0)
             st.write('GPT-4o Mini Parser Output', st.session_state.docs_mini[page].get_content(metadata_mode="all"))
 
 # GPT-4o Parser Tab
 with tab2:
     st.header("GPT-4o Parser")
+    
+    # Ensure uploaded_file is not None before proceeding
     if uploaded_file:
         # Create the temp directory if it doesn't exist
         os.makedirs("./temp", exist_ok=True)
 
         file_path = f"./temp/{uploaded_file.name}"
+        
         if 'docs_gpt4o' not in st.session_state or st.session_state.get('uploaded_file_name') != uploaded_file.name:
             # Clear previous session state
             st.session_state.docs_gpt4o = None
@@ -104,7 +110,7 @@ with tab2:
             if st.button("Start Parsing with GPT-4o"):
                 st.session_state.docs_gpt4o = parse_with_model("openai-gpt4o", file_path)
 
-        if 'docs_gpt4o' in st.session_state:
+        if 'docs_gpt4o' in st.session_state and st.session_state.docs_gpt4o:
             page = st.slider('Select page', min_value=0, max_value=len(st.session_state.docs_gpt4o)-1, value=0, key='slider_gpt4o')
             st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[page].get_content(metadata_mode="all"))
 
