@@ -117,10 +117,9 @@ with tab3:
     top_k = st.slider('Select top_k value:', min_value=1, max_value=10, value=5)
 
     # Initialize session state variables if not already present
-    if 'response' not in st.session_state or 'metadata' not in st.session_state or st.session_state.get('top_k') != top_k or st.session_state.get('model_option') != model_option:
+    if 'response' not in st.session_state or 'metadata' not in st.session_state or st.session_state.get('model_option') != model_option:
         st.session_state.response = None
         st.session_state.metadata = None
-        st.session_state.top_k = top_k
         st.session_state.model_option = model_option
 
     if uploaded_file and user_query:
