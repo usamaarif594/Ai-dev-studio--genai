@@ -1,3 +1,5 @@
+import os
+import hashlib
 from llama_index.core.schema import TextNode
 from typing import List
 import json
@@ -6,11 +8,13 @@ from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_parse import LlamaParse
 from llama_index.core import Document
+from llama_parse import LlamaParse
+from llama_index.core import SummaryIndex
 from llama_index.core import VectorStoreIndex
+from llama_index.llms.openai import OpenAI
 import nest_asyncio
 nest_asyncio.apply()
 import streamlit as st
-import os
 
 openapi = st.secrets["general"]["openapi"]
 llama_api = st.secrets["general"]["llama_api"]
@@ -58,59 +62,56 @@ def parse_with_model(model_name: str, tmp_file_path: str) -> List[Document]:
     
     return [Document.model_validate(d) for d in docs_dicts]
 
+# Function to generate file hash
+def get_file_hash(file) -> str:
+    """Generate a hash for the uploaded file."""
+    file.seek(0)
+    file_hash = hashlib.md5(file.read()).hexdigest()
+    file.seek(0)
+    return file_hash
+
 # Tabs setup
 tab1, tab2, tab3 = st.tabs(['GPT-4o Mini Parser', 'GPT-4o Parser', 'RAG Pipeline'])
+
+# Check if a new file is uploaded
+if uploaded_file:
+    file_hash = get_file_hash(uploaded_file)
+    
+    if st.session_state.get('file_hash') != file_hash:
+        # Clear session state for documents if the file is new
+        st.session_state.clear()
+        st.session_state.file_hash = file_hash
 
 # GPT-4o Mini Parser Tab
 with tab1:
     st.header("GPT-4o Mini Parser")
-    
-    # Ensure uploaded_file is not None before proceeding
     if uploaded_file:
-        # Create the temp directory if it doesn't exist
         os.makedirs("./temp", exist_ok=True)
-        
         file_path = f"./temp/{uploaded_file.name}"
         
-        if 'docs_mini' not in st.session_state or st.session_state.get('uploaded_file_name') != uploaded_file.name:
-            # Clear previous session state
-            st.session_state.docs_mini = None
-            st.session_state.response = None
-            st.session_state.metadata = None
-            st.session_state.uploaded_file_name = uploaded_file.name
-
+        if 'docs_mini' not in st.session_state:
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.read())
 
             if st.button("Start Parsing with GPT-4o Mini"):
                 st.session_state.docs_mini = parse_with_model("openai-gpt-4o-mini", file_path)
 
-        if 'docs_mini' in st.session_state and st.session_state.docs_mini:
+        if 'docs_mini' in st.session_state:
             page = st.slider('Select page', min_value=0, max_value=len(st.session_state.docs_mini)-1, value=0)
             st.write('GPT-4o Mini Parser Output', st.session_state.docs_mini[page].get_content(metadata_mode="all"))
 
 # GPT-4o Parser Tab
 with tab2:
     st.header("GPT-4o Parser")
-    
-    # Ensure uploaded_file is not None before proceeding
     if uploaded_file:
-        # Create the temp directory if it doesn't exist
         os.makedirs("./temp", exist_ok=True)
-
         file_path = f"./temp/{uploaded_file.name}"
-        
-        if 'docs_gpt4o' not in st.session_state or st.session_state.get('uploaded_file_name') != uploaded_file.name:
-            # Clear previous session state
-            st.session_state.docs_gpt4o = None
-            st.session_state.response = None
-            st.session_state.metadata = None
-            st.session_state.uploaded_file_name = uploaded_file.name
 
+        if 'docs_gpt4o' not in st.session_state:
             if st.button("Start Parsing with GPT-4o"):
                 st.session_state.docs_gpt4o = parse_with_model("openai-gpt4o", file_path)
 
-        if 'docs_gpt4o' in st.session_state and st.session_state.docs_gpt4o:
+        if 'docs_gpt4o' in st.session_state:
             page = st.slider('Select page', min_value=0, max_value=len(st.session_state.docs_gpt4o)-1, value=0, key='slider_gpt4o')
             st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[page].get_content(metadata_mode="all"))
 
@@ -130,15 +131,10 @@ with tab3:
     # Slider for top_k
     top_k = st.slider('Select top_k value:', min_value=1, max_value=10, value=5)
 
-    # Initialize session state variables if not already present
-    if 'response' not in st.session_state or 'metadata' not in st.session_state or st.session_state.get('model_option') != model_option or st.session_state.get('uploaded_file_name') != uploaded_file.name:
-        st.session_state.response = None
-        st.session_state.metadata = None
-        st.session_state.model_option = model_option
-        st.session_state.uploaded_file_name = uploaded_file.name
-
     if uploaded_file and user_query:
-        if st.button("Run RAG Pipeline") or st.session_state.response is None:
+        if st.button("Run RAG Pipeline") or st.session_state.get('model_option') != model_option:
+            st.session_state.model_option = model_option
+
             if model_option == "GPT-4o Mini":
                 Settings.llm = OpenAI(model="gpt-4o-mini", api_key=openapi)
                 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
@@ -188,4 +184,4 @@ with tab3:
 
             st.subheader('Metadata')
             for node_id, meta in st.session_state.metadata.items():
-                st.write(f"Node ID: {node_id} - Page: {meta['page']}")
+                st.write(f"Node ID: {node_id} - Page: {meta['page']}") 
