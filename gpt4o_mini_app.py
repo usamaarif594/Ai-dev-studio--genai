@@ -83,20 +83,26 @@ if uploaded_file:
         st.session_state.file_hash = file_hash
 
 # GPT-4o Mini Parser Tab
-# GPT-4o Mini Parser Tab
 with tab1:
     st.header("GPT-4o Mini Parser")
-    if uploaded_file:
-        os.makedirs("./temp", exist_ok=True)
-        file_path = f"./temp/{uploaded_file.name}"
-        
-        if 'docs_mini' not in st.session_state:
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.read())
 
-            if st.button("Start Parsing with GPT-4o Mini"):
-                st.session_state.docs_mini = parse_with_model("openai-gpt-4o-mini", file_path)
+    uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf")
 
+    if uploaded_file is not None:
+        if st.button('Start Parsing with GPT-4o Mini', key='gptmini'):
+            # Save the uploaded file to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                tmp_file.write(uploaded_file.read())
+                tmp_file_path = tmp_file.name
+
+            # Parse the document
+            st.session_state.docs_mini = parse_with_model("openai-gpt-4o-mini", tmp_file_path)
+            st.success('Parsing Completed')
+
+            # Remove the temporary file
+            os.remove(tmp_file_path)
+
+        # Display parsed content
         if 'docs_mini' in st.session_state and st.session_state.docs_mini:
             num_pages = len(st.session_state.docs_mini)
             if num_pages > 1:
