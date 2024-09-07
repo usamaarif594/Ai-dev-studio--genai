@@ -20,7 +20,7 @@ openapi = st.secrets["general"]["openapi"]
 llama_api = st.secrets["general"]["llama_api"]
 
 # Sidebar for file upload
-uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf")
+uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type="pdf", key="upload_pdf")
 
 # Utility functions
 def get_text_nodes(json_list: List[dict]) -> List[TextNode]:
