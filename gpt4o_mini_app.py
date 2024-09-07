@@ -136,10 +136,9 @@ with tab2:
             st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[page].get_content(metadata_mode="all"))
         elif num_pages == 1:
             st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[0].get_content(metadata_mode="all"))
-        else:
-            st.warning("No content was parsed from the document.")
     else:
-        st.warning("Please upload a file and start parsing.")
+        st.warning("No content was parsed from the document.")
+
 
 
 
