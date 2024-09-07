@@ -106,28 +106,41 @@ with tab1:
             st.warning("No content was parsed from the document.")
 
 
+
 # GPT-4o Parser Tab
 with tab2:
     st.header("GPT-4o Parser")
-    if uploaded_file:
-        os.makedirs("./temp", exist_ok=True)
-        file_path = f"./temp/{uploaded_file.name}"
+    
+    if uploaded_file is not None:
+        if st.button('Start Parsing with GPT-4o', key='GPT'):
+            # Save the uploaded file to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                tmp_file.write(uploaded_file.read())
+                tmp_file_path = tmp_file.name
 
-        if 'docs_gpt4o' not in st.session_state:
-            if st.button("Start Parsing with GPT-4o"):
-                st.session_state.docs_gpt4o = parse_with_model("openai-gpt4o", file_path)
-
-        if 'docs_gpt4o' in st.session_state and st.session_state.docs_gpt4o:
-            num_pages = len(st.session_state.docs_gpt4o)
-            if num_pages > 1:
-                page = st.slider('Select page', min_value=0, max_value=num_pages - 1, value=0, key='slider_gpt4o')
-                st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[page].get_content(metadata_mode="all"))
-            elif num_pages == 1:
-                st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[0].get_content(metadata_mode="all"))
-            else:
-                st.warning("No content was parsed from the document.")
+            try:
+                # Parse the document
+                st.session_state.docs_gpt4o = parse_with_model("openai-gpt4o", tmp_file_path)
+                st.success('Parsing Completed')
+            except Exception as e:
+                st.error(f"An error occurred during parsing: {e}")
+            finally:
+                # Remove the temporary file
+                os.remove(tmp_file_path)
+    
+    # Display parsed content
+    if 'docs_gpt4o' in st.session_state and st.session_state.docs_gpt4o:
+        num_pages = len(st.session_state.docs_gpt4o)
+        if num_pages > 1:
+            page = st.slider('Select page', min_value=0, max_value=num_pages - 1, value=0, key='slider_gpt4o')
+            st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[page].get_content(metadata_mode="all"))
+        elif num_pages == 1:
+            st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[0].get_content(metadata_mode="all"))
         else:
-            st.warning("Please upload a file and start parsing.")
+            st.warning("No content was parsed from the document.")
+    else:
+        st.warning("Please upload a file and start parsing.")
+
 
 
 # RAG Pipeline Tab
