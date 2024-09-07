@@ -156,6 +156,7 @@ with tab2:
         st.warning("No content was parsed from the document.")
 
 # RAG Pipeline Tab
+# RAG Pipeline Tab
 with tab3:
     st.header("RAG Pipeline")
 
@@ -214,10 +215,15 @@ with tab3:
                     st.session_state.metadata = response_gpt4o.metadata
 
         if st.session_state.response:
-            st.write("Response:", st.session_state.response)
-            st.write("Metadata:")
+            # Display the response
+            st.subheader("Response")
+            st.write(st.session_state.response.response)
+            
+            # Display metadata
+            st.subheader("Metadata")
             for node_id, metadata in st.session_state.metadata.items():
-                st.write(f"Node ID: {node_id}")
-                st.json(metadata)
+                st.write(f"**Node ID:** {node_id}")
+                st.write(f"**Page:** {metadata.get('page', 'N/A')}")
         else:
             st.warning("No response available. Please run the RAG pipeline.")
+
