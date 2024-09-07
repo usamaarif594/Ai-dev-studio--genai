@@ -19,22 +19,23 @@ llama_api = st.secrets["general"]["llama_api"]
 
 st.sidebar.header('Upload File')
 uploaded_file = st.sidebar.file_uploader("Upload PDF", type="pdf", key="pdf_file")
-css = """
+st.markdown(
+    """
     <style>
-    .css-1d391kg {
-        display: flex;
-        justify-content: center;
-        padding: 0;
-    }
-    .css-1d391kg .css-1c2m8de {
-        width: 100%;
-        text-align: center;
-    }
-    </style>
-"""
+        div[data-testid="tab"]:nth-of-type(1)
+        {
+            border:1px solid red;
+        } 
 
-# Inject CSS into the Streamlit app
-st.markdown(css, unsafe_allow_html=True)
+        div[data-testid="tab"]:nth-of-type(2)
+        {
+            border:1px solid blue;
+            text-align: end;
+        } 
+    </style>
+    """,unsafe_allow_html=True
+)
+
 
 tab1, tab2, tab3 = st.tabs(['Parse with Anthropic-Sonnet-3.5', 'Parse with GPT-4o', 'RAG Pipeline'])
 
