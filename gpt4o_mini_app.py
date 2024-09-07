@@ -3,6 +3,7 @@ from llama_index.core import Document
 import nest_asyncio
 nest_asyncio.apply()
 import os
+import hashlib
 from llama_index.core import Document
 from llama_index.core.schema import TextNode
 from llama_parse import LlamaParse
