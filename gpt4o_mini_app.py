@@ -83,6 +83,7 @@ if uploaded_file:
         st.session_state.file_hash = file_hash
 
 # GPT-4o Mini Parser Tab
+# GPT-4o Mini Parser Tab
 with tab1:
     st.header("GPT-4o Mini Parser")
     if uploaded_file:
@@ -96,9 +97,17 @@ with tab1:
             if st.button("Start Parsing with GPT-4o Mini"):
                 st.session_state.docs_mini = parse_with_model("openai-gpt-4o-mini", file_path)
 
-        if 'docs_mini' in st.session_state:
-            page = st.slider('Select page', min_value=0, max_value=len(st.session_state.docs_mini)-1, value=0)
-            st.write('GPT-4o Mini Parser Output', st.session_state.docs_mini[page].get_content(metadata_mode="all"))
+        if 'docs_mini' in st.session_state and st.session_state.docs_mini:
+            num_pages = len(st.session_state.docs_mini)
+            if num_pages > 1:
+                page = st.slider('Select page', min_value=0, max_value=num_pages - 1, value=0)
+                st.write('GPT-4o Mini Parser Output', st.session_state.docs_mini[page].get_content(metadata_mode="all"))
+            elif num_pages == 1:
+                st.write('GPT-4o Mini Parser Output', st.session_state.docs_mini[0].get_content(metadata_mode="all"))
+            else:
+                st.warning("No content was parsed from the document.")
+        else:
+            st.warning("Please upload a file and start parsing.")
 
 # GPT-4o Parser Tab
 with tab2:
@@ -111,9 +120,18 @@ with tab2:
             if st.button("Start Parsing with GPT-4o"):
                 st.session_state.docs_gpt4o = parse_with_model("openai-gpt4o", file_path)
 
-        if 'docs_gpt4o' in st.session_state:
-            page = st.slider('Select page', min_value=0, max_value=len(st.session_state.docs_gpt4o)-1, value=0, key='slider_gpt4o')
-            st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[page].get_content(metadata_mode="all"))
+        if 'docs_gpt4o' in st.session_state and st.session_state.docs_gpt4o:
+            num_pages = len(st.session_state.docs_gpt4o)
+            if num_pages > 1:
+                page = st.slider('Select page', min_value=0, max_value=num_pages - 1, value=0, key='slider_gpt4o')
+                st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[page].get_content(metadata_mode="all"))
+            elif num_pages == 1:
+                st.write('GPT-4o Parser Output', st.session_state.docs_gpt4o[0].get_content(metadata_mode="all"))
+            else:
+                st.warning("No content was parsed from the document.")
+        else:
+            st.warning("Please upload a file and start parsing.")
+
 
 # RAG Pipeline Tab
 with tab3:
