@@ -105,7 +105,7 @@ with tab1:
             else:
                 st.warning("No content was parsed from the document.")
          else:
-            st.warning("Please upload a file and start parsing.")
+             st.warning("Please upload a file and start parsing.")
 
 # GPT-4o Parser Tab
 with tab2:
