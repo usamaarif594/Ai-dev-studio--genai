@@ -66,7 +66,7 @@ if st.sidebar.button("Parse Documents") and uploaded_files:
     files = []
     for uploaded_file in uploaded_files:
         file_path = os.path.join(CLAIMS_DIR, uploaded_file.name)
-        st.write(f"Saving file: {file_path}")  # Debugging statement
+        
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         files.append(file_path)
