@@ -17,19 +17,14 @@ from llama_index.core import (
 
 nest_asyncio.apply()
 
-
-
-
-
 openapi = st.secrets["openai"]["api_key"]
 llama_api = st.secrets["llama"]["api_key"]
-
-nest_asyncio.apply()
 
 # Ensure the 'claims' directory exists
 CLAIMS_DIR = "claims"
 os.makedirs(CLAIMS_DIR, exist_ok=True)
 os.makedirs("data_images", exist_ok=True)
+
 # Initialize OpenAI API client
 openai.api_key = openapi
 
@@ -63,14 +58,11 @@ if 'show_image' not in st.session_state:
 for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+
 uploaded_files = st.sidebar.file_uploader("Upload your claim documents", accept_multiple_files=True)
 
 # Handle file uploads and parsing
 if st.sidebar.button("Parse Documents") and uploaded_files:
-    # Ensure the 'claims' directory exists
-    os.makedirs(CLAIMS_DIR, exist_ok=True)
-    os.makedirs("data_images", exist_ok=True)
-
     files = []
     for uploaded_file in uploaded_files:
         file_path = os.path.join(CLAIMS_DIR, uploaded_file.name)
@@ -150,21 +142,6 @@ if st.sidebar.button("Parse Documents") and uploaded_files:
     except Exception as e:
         st.error(f"Error during parsing: {e}")
 
-
-# if st.session_state['image_files']:
-#     screenshot_files = st.session_state['image_files']
-#     options = [f"Page {get_page_number(f.name)}" for f in screenshot_files]
-#     selected_image = st.sidebar.selectbox("Select a screenshot to view:", options=options)
-
-#     if st.sidebar.button('Show Images'):
-#         st.session_state['show_image'] = True
-
-#     if st.session_state['show_image']:
-#         # Convert Path object to string
-#         selected_file_path = str(screenshot_files[options.index(selected_image)])
-#         st.image(selected_file_path, caption=f"Screenshot: {selected_image}", width=400)
-
-
 # Chat input handling
 if prompt := st.chat_input("Enter your query here:"):
     # Add user message to chat history
@@ -175,8 +152,11 @@ if prompt := st.chat_input("Enter your query here:"):
     
     # Generate response using the query engine
     if st.session_state['query_engine']:
-        response = st.session_state['query_engine'].query(prompt)
-        response_text = str(response)
+        try:
+            response = st.session_state['query_engine'].query(prompt)
+            response_text = str(response)
+        except Exception as e:
+            response_text = f"Error during query execution: {e}"
     else:
         response_text = "No query engine available. Please upload and parse documents first."
     
