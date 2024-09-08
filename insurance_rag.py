@@ -65,21 +65,24 @@ for message in st.session_state['messages']:
         st.markdown(message["content"])
 
 # Handle file uploads and parsing
-uploaded_files = st.sidebar.file_uploader("Upload your claim documents", accept_multiple_files=True)
-
 if st.sidebar.button("Parse Documents") and uploaded_files:
     # Ensure the 'claims' directory exists
     os.makedirs(CLAIMS_DIR, exist_ok=True)
     os.makedirs("data_images", exist_ok=True)
 
-    # Save uploaded files to the 'claims' directory
     files = []
     for uploaded_file in uploaded_files:
         file_path = os.path.join(CLAIMS_DIR, uploaded_file.name)
-        st.write(f"Saving file: {file_path}")  # Debug statement
+        st.write(f"Saving file: {file_path}")  # Debugging statement
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         files.append(file_path)
+
+    # Debug: Check if files are saved
+    for file_path in files:
+        if not os.path.exists(file_path):
+            st.error(f"File not found after saving: {file_path}")
+            st.stop()
 
     try:
         parser = LlamaParse(
@@ -141,8 +144,11 @@ if st.sidebar.button("Parse Documents") and uploaded_files:
         st.session_state['query_engine'] = index.as_query_engine()
         st.success("Documents parsed successfully!")
 
+    except FileNotFoundError as e:
+        st.error(f"File not found error during parsing: {e}")
     except Exception as e:
         st.error(f"Error during parsing: {e}")
+
 
 # if st.session_state['image_files']:
 #     screenshot_files = st.session_state['image_files']
