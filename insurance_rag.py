@@ -63,6 +63,7 @@ if 'show_image' not in st.session_state:
 for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+uploaded_files = st.sidebar.file_uploader("Upload your claim documents", accept_multiple_files=True)
 
 # Handle file uploads and parsing
 if st.sidebar.button("Parse Documents") and uploaded_files:
