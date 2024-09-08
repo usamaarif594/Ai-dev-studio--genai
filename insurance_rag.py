@@ -29,8 +29,7 @@ nest_asyncio.apply()
 # Ensure the 'claims' directory exists
 CLAIMS_DIR = "claims"
 os.makedirs(CLAIMS_DIR, exist_ok=True)
-
-
+os.makedirs("data_images", exist_ok=True)
 # Initialize OpenAI API client
 openai.api_key = openapi
 
