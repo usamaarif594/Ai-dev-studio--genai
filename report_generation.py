@@ -14,8 +14,8 @@ from IPython.display import display, Markdown, Image
 
 nest_asyncio.apply()
 
-openapi = st.secrets["api_keys"]["openai_api_key"]
-llama_api= st.secrets["api_keys"]["llama_api_key"]
+openapi = st.secrets["api_keys"]["openapi"]
+llama_api= st.secrets["api_keys"]["llama_api"]
 os.makedirs('data', exist_ok=True)
 os.makedirs('data_images', exist_ok=True)
 
