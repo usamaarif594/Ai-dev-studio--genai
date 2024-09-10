@@ -196,7 +196,9 @@ if text_nodes and index:
     # Handle user queries
     if prompt := st.chat_input("Enter your query here:"):
         # Store user query in session state
-        st.session_state['messages'].append({"role": "user", "content": [TextBlock(text=prompt)]})
+        user_message = {"role": "user", "content": [TextBlock(text=prompt)]}
+        st.session_state['messages'].append(user_message)
+        st.write(f"User Query: {prompt}")  # Debug statement
 
         # Display user query immediately
         with st.chat_message("user"):
@@ -208,7 +210,9 @@ if text_nodes and index:
 
                 if isinstance(response.response, ReportOutput):
                     # Store assistant's response as a list of blocks (TextBlock and ImageBlock)
-                    st.session_state['messages'].append({"role": "assistant", "content": response.response.blocks})
+                    assistant_message = {"role": "assistant", "content": response.response.blocks}
+                    st.session_state['messages'].append(assistant_message)
+                    st.write(f"Assistant Response: {response.response}")  # Debug statement
 
                     # Display assistant's response immediately
                     with st.chat_message("assistant"):
@@ -218,10 +222,9 @@ if text_nodes and index:
                             elif isinstance(block, ImageBlock):
                                 st.image(block.file_path)  # Render image block
                 else:
-                    st.markdown("Unexpected response format.")
-
+                    st.warning("Unexpected response format.")
             except Exception as e:
-                error_message = f"Error querying engine: {e}"
+                error_message = f"Error processing the query: {e}"
                 st.session_state['messages'].append({"role": "assistant", "content": [TextBlock(text=error_message)]})
                 with st.chat_message("assistant"):
                     st.markdown(error_message)
