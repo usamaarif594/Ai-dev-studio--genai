@@ -191,9 +191,9 @@ if text_nodes and index:
         if query_engine:
             try:
                 response = query_engine.query(prompt)
-                # Add the assistant response to chat history
+                # Render the response if it's an instance of ReportOutput
                 if isinstance(response.response, ReportOutput):
-                    # Render the response
+                    # Append the generated report to the chat history
                     st.session_state['messages'].append({"role": "assistant", "content": "Generating report..."})
                     with st.chat_message("assistant"):
                         response.response.render()
