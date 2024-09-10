@@ -7,10 +7,9 @@ from typing import List, Union
 from llama_index.core.schema import TextNode
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
-from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, Settings
+from llama_index.core import VectorStoreIndex, Settings
 from llama_parse import LlamaParse
 from pydantic import BaseModel, Field
-from IPython.display import display, Markdown, Image
 
 nest_asyncio.apply()
 
@@ -35,6 +34,7 @@ if 'parsed_data' not in st.session_state:
 
 if 'text_nodes' not in st.session_state:
     st.session_state['text_nodes'] = None
+
 if 'query_engine' not in st.session_state:
     st.session_state['query_engine'] = None
 
@@ -45,8 +45,7 @@ if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 
 # Display chat messages from history
-
-for message in st.session_state.messages:
+for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
@@ -132,8 +131,8 @@ if st.sidebar.button("Parse Documents"):
         st.warning("Please upload a PDF file first.")
 
 # Only proceed if the document has been parsed
-text_nodes = st.session_state['text_nodes'] if 'text_nodes' in st.session_state else None
-index = st.session_state['index'] if 'index' in st.session_state else None
+text_nodes = st.session_state['text_nodes']
+index = st.session_state['index']
 
 if text_nodes and index:
     embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
@@ -178,7 +177,7 @@ if text_nodes and index:
                     st.image(b.file_path)
 
     # Initialize LLM and Query Engine
-    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt,api_key=openapi)
+    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt, api_key=openapi)
     sllm = llm.as_structured_llm(output_cls=ReportOutput)
     query_engine = index.as_query_engine(
         similarity_top_k=10,
@@ -186,11 +185,10 @@ if text_nodes and index:
         response_mode="compact",
     )
 
+    st.session_state['query_engine'] = query_engine
 
-    
     if prompt := st.chat_input("Enter your query here:"):
-        # st.session_state['messages'].append({"role": "user", "content": prompt})
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state['messages'].append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
@@ -199,14 +197,20 @@ if text_nodes and index:
                 response = st.session_state['query_engine'].query(prompt)
                 # Render the response if it's an instance of ReportOutput
                 if isinstance(response.response, ReportOutput):
+                    st.session_state['messages'].append({"role": "assistant", "content": "Generating report..."})
+                    with st.chat_message("assistant"):
+                        st.markdown("Generating report...")
                     response.response.render()
                 else:
-                    st.markdown("Unexpected response format.")
+                    st.session_state['messages'].append({"role": "assistant", "content": "Unexpected response format."})
+                    with st.chat_message("assistant"):
+                        st.markdown("Unexpected response format.")
             except Exception as e:
                 response_text = f"Error during query execution: {e}"
-                
+                st.session_state['messages'].append({"role": "assistant", "content": response_text})
                 with st.chat_message("assistant"):
                     st.markdown(response_text)
-                st.session_state.messages.append({"role": "assistant", "content": response})
         else:
             st.warning("Query engine not initialized.")
+else:
+    st.warning("No text nodes or index found. Please upload and parse a document first.")
