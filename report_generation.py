@@ -7,7 +7,7 @@ from typing import List, Union
 from llama_index.core.schema import TextNode
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
-from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, Settings
+from llama_index.core import VectorStoreIndex, Settings
 from llama_parse import LlamaParse
 from pydantic import BaseModel, Field
 
@@ -170,7 +170,7 @@ if text_nodes and index:
             for b in self.blocks:
                 if isinstance(b, TextBlock):
                     st.markdown(b.text)
-                else:
+                elif isinstance(b, ImageBlock):
                     st.image(b.file_path)
 
     # Initialize LLM and Query Engine
@@ -194,17 +194,17 @@ if text_nodes and index:
                 # Add the assistant response to chat history
                 if isinstance(response.response, ReportOutput):
                     # Render the response
+                    st.session_state['messages'].append({"role": "assistant", "content": "Generating report..."})
                     with st.chat_message("assistant"):
-                        st.markdown("Generating report...")
                         response.response.render()
                 else:
+                    st.session_state['messages'].append({"role": "assistant", "content": "Unexpected response format."})
                     with st.chat_message("assistant"):
                         st.markdown("Unexpected response format.")
             except Exception as e:
                 response_text = f"Error during query execution: {e}"
-                
+                st.session_state['messages'].append({"role": "assistant", "content": response_text})
                 with st.chat_message("assistant"):
                     st.markdown(response_text)
-                st.session_state['messages'].append({"role": "assistant", "content": response_text})
         else:
             st.warning("Query engine not initialized.")
