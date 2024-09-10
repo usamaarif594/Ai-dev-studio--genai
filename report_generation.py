@@ -7,14 +7,15 @@ from typing import List, Union
 from llama_index.core.schema import TextNode
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
-from llama_index.core import VectorStoreIndex, Settings
+from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, Settings
 from llama_parse import LlamaParse
 from pydantic import BaseModel, Field
+from IPython.display import display, Markdown, Image
 
 nest_asyncio.apply()
 
 openapi = st.secrets["api_keys"]["openapi"]
-llama_api = st.secrets["api_keys"]["llama_api"]
+llama_api= st.secrets["api_keys"]["llama_api"]
 os.makedirs('data', exist_ok=True)
 os.makedirs('data_images', exist_ok=True)
 
@@ -35,9 +36,6 @@ if 'parsed_data' not in st.session_state:
 if 'text_nodes' not in st.session_state:
     st.session_state['text_nodes'] = None
 
-if 'query_engine' not in st.session_state:
-    st.session_state['query_engine'] = None
-
 if 'index' not in st.session_state:
     st.session_state['index'] = None
 
@@ -49,8 +47,8 @@ for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# File uploader for PDF files with unique key
-uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type=["pdf"], accept_multiple_files=True, key="file_uploader")
+# File uploader for PDF files
+uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type=["pdf"], accept_multiple_files=True)
 
 def get_page_number(file_name):
     """Gets page number of images using regex on file names"""
@@ -98,7 +96,7 @@ def load_or_create_index():
     return index
 
 # Handle file parsing
-if st.sidebar.button("Parse Documents", key="parse_button"):
+if st.sidebar.button("Parse Documents"):
     if uploaded_file:
         with st.spinner("Parsing documents, please wait..."):
             # Clear previous data
@@ -131,8 +129,8 @@ if st.sidebar.button("Parse Documents", key="parse_button"):
         st.warning("Please upload a PDF file first.")
 
 # Only proceed if the document has been parsed
-text_nodes = st.session_state['text_nodes']
-index = st.session_state['index']
+text_nodes = st.session_state['text_nodes'] if 'text_nodes' in st.session_state else None
+index = st.session_state['index'] if 'index' in st.session_state else None
 
 if text_nodes and index:
     embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
@@ -173,25 +171,11 @@ if text_nodes and index:
             for b in self.blocks:
                 if isinstance(b, TextBlock):
                     st.markdown(b.text)
-                elif isinstance(b, ImageBlock):
-                    # Ensure image path is correct
-                    if os.path.exists(b.file_path):
-                        st.image(b.file_path)
-                    else:
-                        st.warning(f"Image not found: {b.file_path}")
-
-        def to_markdown(self) -> str:
-            """Convert the ReportOutput to a markdown string for chat history"""
-            md = ""
-            for b in self.blocks:
-                if isinstance(b, TextBlock):
-                    md += f"{b.text}\n"
-                elif isinstance(b, ImageBlock):
-                    md += f"![Image]({b.file_path})\n"
-            return md
+                else:
+                    st.image(b.file_path)
 
     # Initialize LLM and Query Engine
-    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt, api_key=openapi)
+    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt,api_key=openapi)
     sllm = llm.as_structured_llm(output_cls=ReportOutput)
     query_engine = index.as_query_engine(
         similarity_top_k=10,
@@ -199,29 +183,24 @@ if text_nodes and index:
         response_mode="compact",
     )
 
-    st.session_state['query_engine'] = query_engine
-
-    if prompt := st.chat_input("Enter your query here:", key="chat_input"):
+    if prompt := st.chat_input("Enter your query here:"):
         st.session_state['messages'].append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        if st.session_state['query_engine']:
+        if query_engine:
             try:
-                response = st.session_state['query_engine'].query(prompt)
+                response = query_engine.query(prompt)
                 # Render the response if it's an instance of ReportOutput
                 if isinstance(response.response, ReportOutput):
                     response.response.render()
-                    st.session_state['messages'].append({"role": "assistant", "content": response.response.to_markdown()})
-                    with st.chat_message("assistant"):
-                        st.markdown(response.response.to_markdown())
                 else:
-                    st.session_state['messages'].append({"role": "assistant", "content": "Unexpected response format."})
-                    with st.chat_message("assistant"):
-                        st.markdown("Unexpected response format.")
+                    st.markdown("Unexpected response format.")
             except Exception as e:
-                st.session_state['messages'].append({"role": "assistant", "content": f"Error: {str(e)}"})
+                response_text = f"Error during query execution: {e}"
+                
                 with st.chat_message("assistant"):
-                    st.markdown(f"Error: {str(e)}")
-else:
-    st.warning("No document parsed yet. Please upload and parse a document.")
+                    st.markdown(response_text)
+                st.session_state['messages'].append({"role": "assistant", "content": response_text})
+        else:
+            st.warning("Query engine not initialized.")
