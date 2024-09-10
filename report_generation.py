@@ -35,6 +35,8 @@ if 'parsed_data' not in st.session_state:
 
 if 'text_nodes' not in st.session_state:
     st.session_state['text_nodes'] = None
+if 'query_engine' not in st.session_state:
+    st.session_state['query_engine'] = None
 
 if 'index' not in st.session_state:
     st.session_state['index'] = None
