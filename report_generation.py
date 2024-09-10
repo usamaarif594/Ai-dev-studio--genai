@@ -183,28 +183,37 @@ if text_nodes and index:
     )
 
     if prompt := st.chat_input("Enter your query here:"):
-        # Add the user query to chat history
-        st.session_state['messages'].append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    # Add the user query to chat history
+    st.session_state['messages'].append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        if query_engine:
-            try:
-                response = query_engine.query(prompt)
-                # Render the response if it's an instance of ReportOutput
-                if isinstance(response.response, ReportOutput):
-                    # Append the generated report to the chat history
-                    st.session_state['messages'].append({"role": "assistant", "content": "Generating report..."})
-                    with st.chat_message("assistant"):
-                        response.response.render()
-                else:
-                    st.session_state['messages'].append({"role": "assistant", "content": "Unexpected response format."})
-                    with st.chat_message("assistant"):
-                        st.markdown("Unexpected response format.")
-            except Exception as e:
-                response_text = f"Error during query execution: {e}"
-                st.session_state['messages'].append({"role": "assistant", "content": response_text})
+    if query_engine:
+        try:
+            # Display "Generating report..." message
+            st.session_state['messages'].append({"role": "assistant", "content": "Generating report..."})
+            with st.chat_message("assistant"):
+                st.markdown("Generating report...")
+
+            # Process the query and get the response
+            response = query_engine.query(prompt)
+
+            # Ensure the response is an instance of ReportOutput
+            if isinstance(response.response, ReportOutput):
+                # Update messages with the final report
+                st.session_state['messages'].append({"role": "assistant", "content": "Here is the report:"})
                 with st.chat_message("assistant"):
-                    st.markdown(response_text)
-        else:
-            st.warning("Query engine not initialized.")
+                    response.response.render()
+            else:
+                # Update messages with unexpected format message
+                st.session_state['messages'].append({"role": "assistant", "content": "Unexpected response format."})
+                with st.chat_message("assistant"):
+                    st.markdown("Unexpected response format.")
+        except Exception as e:
+            # Update messages with error details
+            response_text = f"Error during query execution: {e}"
+            st.session_state['messages'].append({"role": "assistant", "content": response_text})
+            with st.chat_message("assistant"):
+                st.markdown(response_text)
+    else:
+        st.warning("Query engine not initialized.")
