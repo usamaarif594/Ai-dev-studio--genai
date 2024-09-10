@@ -12,10 +12,14 @@ from llama_parse import LlamaParse
 from pydantic import BaseModel, Field
 from IPython.display import display, Markdown, Image
 
+# Apply nested asyncio to avoid loop errors
 nest_asyncio.apply()
 
+# Get API keys from secrets
 openapi = st.secrets["api_keys"]["openapi"]
 llama_api= st.secrets["api_keys"]["llama_api"]
+
+# Create necessary directories if not already present
 os.makedirs('data', exist_ok=True)
 os.makedirs('data_images', exist_ok=True)
 
@@ -27,9 +31,10 @@ parser = LlamaParse(
     vendor_multimodal_model_name="anthropic-sonnet-3.5",
 )
 
-st.title('Multimodel Report Generation from Slide Deck')
+# Streamlit title
+st.title('Multimodal Report Generation from Slide Deck')
 
-# Initialize session state
+# Initialize session state for parsed data, text nodes, and index
 if 'parsed_data' not in st.session_state:
     st.session_state['parsed_data'] = None
 
@@ -42,7 +47,7 @@ if 'index' not in st.session_state:
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 
-# Display chat messages from history
+# Display chat messages from history (including both text and images)
 for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
         for block in message["content"]:  # Loop through each block of the message
@@ -54,6 +59,7 @@ for message in st.session_state['messages']:
 # File uploader for PDF files
 uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type=["pdf"], accept_multiple_files=True)
 
+# Helper functions
 def get_page_number(file_name):
     """Gets page number of images using regex on file names"""
     match = re.search(r"-page-(\d+)\.jpg$", str(file_name))
@@ -86,20 +92,21 @@ def get_text_nodes(json_dicts, image_dir=None):
     return nodes
 
 def update_index(text_nodes):
+    """Updates or creates a vector store index for the text nodes."""
     embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
     index = VectorStoreIndex(text_nodes, embed_model=embed_model)
     index.storage_context.persist(persist_dir="./storage_nodes_summary")
     return index
 
 def load_or_create_index():
+    """Loads or creates a new index based on parsed text nodes."""
     if os.path.exists("storage_nodes_summary"):
-        # Remove old index data
         for file in Path("storage_nodes_summary").iterdir():
             os.remove(file)
     index = update_index(st.session_state['text_nodes'])
     return index
 
-# Handle file parsing
+# Handle file parsing and upload
 if st.sidebar.button("Parse Documents"):
     if uploaded_file:
         with st.spinner("Parsing documents, please wait..."):
@@ -107,16 +114,14 @@ if st.sidebar.button("Parse Documents"):
             st.session_state['parsed_data'] = None
             st.session_state['text_nodes'] = None
             st.session_state['index'] = None
+
             # Remove old files from 'data' and 'data_images'
             for file in Path("data").iterdir():
                 os.remove(file)
             for file in Path("data_images").iterdir():
                 os.remove(file)
-            # Remove old index if exists
-            if os.path.exists("storage_nodes_summary"):
-                for file in Path("storage_nodes_summary").iterdir():
-                    os.remove(file)
 
+            # Parse each uploaded PDF file
             for file in uploaded_file:
                 pdf_path = os.path.join("data", file.name)
                 with open(pdf_path, "wb") as f:
@@ -132,11 +137,12 @@ if st.sidebar.button("Parse Documents"):
     else:
         st.warning("Please upload a PDF file first.")
 
-# Only proceed if the document has been parsed
+# Proceed if the document has been parsed
 text_nodes = st.session_state['text_nodes'] if 'text_nodes' in st.session_state else None
 index = st.session_state['index'] if 'index' in st.session_state else None
 
 if text_nodes and index:
+    # Initialize embedding model and LLM
     embed_model = OpenAIEmbedding(model="text-embedding-3-large", api_key=openapi)
     llm = OpenAI(model="gpt-4o", api_key=openapi)
     Settings.llm = llm
@@ -144,6 +150,7 @@ if text_nodes and index:
 
     retriever = index.as_retriever()
 
+    # System prompt for generating the structured report
     system_prompt = """\
     You are a report generation assistant tasked with producing a well-formatted context given parsed context.
 
@@ -159,7 +166,7 @@ if text_nodes and index:
     You MUST output your response as a tool call in order to adhere to the required output format. Do NOT give back normal text.
     """
 
-    # Ensure proper class definitions
+    # Define text and image blocks
     class TextBlock(BaseModel):
         text: str = Field(..., description="The text for this block.")
 
@@ -179,7 +186,7 @@ if text_nodes and index:
                     st.image(b.file_path)
 
     # Initialize LLM and Query Engine
-    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt,api_key=openapi)
+    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt, api_key=openapi)
     sllm = llm.as_structured_llm(output_cls=ReportOutput)
     query_engine = index.as_query_engine(
         similarity_top_k=10,
@@ -187,42 +194,39 @@ if text_nodes and index:
         response_mode="compact",
     )
 
-   
-    # Handle new user input and responses
-if prompt := st.chat_input("Enter your query here:"):
-    # Store user query in session state
-    st.session_state['messages'].append({"role": "user", "content": [TextBlock(text=prompt)]})
+    # Handle user queries
+    if prompt := st.chat_input("Enter your query here:"):
+        # Store user query in session state
+        st.session_state['messages'].append({"role": "user", "content": [TextBlock(text=prompt)]})
 
-    # Display user query immediately
-    with st.chat_message("user"):
-        st.markdown(prompt)
+        # Display user query immediately
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-    # Process the query and generate response
-    if query_engine:
-        try:
-            response = query_engine.query(prompt)
+        if query_engine:
+            try:
+                response = query_engine.query(prompt)
 
-            if isinstance(response.response, ReportOutput):
-                # Store assistant's response as a list of blocks (TextBlock and ImageBlock)
-                st.session_state['messages'].append({"role": "assistant", "content": response.response.blocks})
+                if isinstance(response.response, ReportOutput):
+                    # Store assistant's response as a list of blocks (TextBlock and ImageBlock)
+                    st.session_state['messages'].append({"role": "assistant", "content": response.response.blocks})
 
-                # Display assistant's response immediately
+                    # Display assistant's response immediately
+                    with st.chat_message("assistant"):
+                        for block in response.response.blocks:
+                            if isinstance(block, TextBlock):
+                                st.markdown(block.text)  # Render text block
+                            elif isinstance(block, ImageBlock):
+                                st.image(block.file_path)  # Render image block
+                else:
+                    st.markdown("Unexpected response format.")
+
+            except Exception as e:
+                error_message = f"Error during query execution: {e}"
+                
+                # Store and display the error message
+                st.session_state['messages'].append({"role": "assistant", "content": [TextBlock(text=error_message)]})
                 with st.chat_message("assistant"):
-                    for block in response.response.blocks:
-                        if isinstance(block, TextBlock):
-                            st.markdown(block.text)  # Render text block
-                        elif isinstance(block, ImageBlock):
-                            st.image(block.file_path)  # Render image block
-            else:
-                st.markdown("Unexpected response format.")
-
-        except Exception as e:
-            error_message = f"Error during query execution: {e}"
-            
-            # Store and display the error message
-            st.session_state['messages'].append({"role": "assistant", "content": [TextBlock(text=error_message)]})
-            with st.chat_message("assistant"):
-                st.markdown(error_message)
-    else:
-        st.warning("Query engine not initialized.")
-    
+                    st.markdown(error_message)
+        else:
+            st.warning("Query engine not initialized.")
