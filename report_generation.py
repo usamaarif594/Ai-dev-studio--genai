@@ -200,7 +200,7 @@ if text_nodes and index:
                     st.session_state['messages'].append({"role": "assistant", "content": "Generating report..."})
                     with st.chat_message("assistant"):
                         st.markdown("Generating report...")
-                    response.response.render()
+                        response.response.render()
                 else:
                     st.session_state['messages'].append({"role": "assistant", "content": "Unexpected response format."})
                     with st.chat_message("assistant"):
