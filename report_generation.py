@@ -31,6 +31,25 @@ parser = LlamaParse(
     vendor_multimodal_model_name="anthropic-sonnet-3.5",
 )
 
+# Define text and image blocks (moved this section before it is used)
+class TextBlock(BaseModel):
+    text: str = Field(..., description="The text for this block.")
+
+class ImageBlock(BaseModel):
+    file_path: str = Field(..., description="File path to the image.")
+
+class ReportOutput(BaseModel):
+    blocks: List[Union[TextBlock, ImageBlock]] = Field(
+        ..., description="A list of text and image blocks."
+    )
+
+    def render(self) -> None:
+        for b in self.blocks:
+            if isinstance(b, TextBlock):
+                st.markdown(b.text)
+            else:
+                st.image(b.file_path)
+
 # Streamlit title
 st.title('Multimodal Report Generation from Slide Deck')
 
@@ -166,25 +185,6 @@ if text_nodes and index:
     You MUST output your response as a tool call in order to adhere to the required output format. Do NOT give back normal text.
     """
 
-    # Define text and image blocks
-    class TextBlock(BaseModel):
-        text: str = Field(..., description="The text for this block.")
-
-    class ImageBlock(BaseModel):
-        file_path: str = Field(..., description="File path to the image.")
-
-    class ReportOutput(BaseModel):
-        blocks: List[Union[TextBlock, ImageBlock]] = Field(
-            ..., description="A list of text and image blocks."
-        )
-
-        def render(self) -> None:
-            for b in self.blocks:
-                if isinstance(b, TextBlock):
-                    st.markdown(b.text)
-                else:
-                    st.image(b.file_path)
-
     # Initialize LLM and Query Engine
     llm = OpenAI(model="gpt-4o", system_prompt=system_prompt, api_key=openapi)
     sllm = llm.as_structured_llm(output_cls=ReportOutput)
@@ -222,9 +222,7 @@ if text_nodes and index:
                     st.markdown("Unexpected response format.")
 
             except Exception as e:
-                error_message = f"Error during query execution: {e}"
-                
-                # Store and display the error message
+                error_message = f"Error querying engine: {e}"
                 st.session_state['messages'].append({"role": "assistant", "content": [TextBlock(text=error_message)]})
                 with st.chat_message("assistant"):
                     st.markdown(error_message)
