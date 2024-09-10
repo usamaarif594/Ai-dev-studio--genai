@@ -197,7 +197,7 @@ if text_nodes and index:
                 response = st.session_state['query_engine'].query(prompt)
                 # Render the response if it's an instance of ReportOutput
                 if isinstance(response.response, ReportOutput):
-                    st.session_state['messages'].append({"role": "assistant", "content":  response_text})
+                    st.session_state['messages'].append({"role": "assistant", "content":  response})
                     with st.chat_message("assistant"):
                         st.markdown("Generating report...")
                         response.response.render()
