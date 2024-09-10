@@ -42,10 +42,14 @@ if 'index' not in st.session_state:
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 
-# # Display chat messages from history
-# for message in st.session_state['messages']:
-#     with st.chat_message(message["role"]):
-#         st.markdown(message["content"])
+# Display chat messages from history
+for message in st.session_state['messages']:
+    with st.chat_message(message["role"]):
+        for block in message["content"]:  # Loop through each block of the message
+            if isinstance(block, TextBlock):
+                st.markdown(block.text)  # Render text block as markdown
+            elif isinstance(block, ImageBlock):
+                st.image(block.file_path)  # Render image block from file path
 
 # File uploader for PDF files
 uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type=["pdf"], accept_multiple_files=True)
@@ -183,56 +187,42 @@ if text_nodes and index:
         response_mode="compact",
     )
 
-   # Display chat messages from history
-    for message in st.session_state['messages']:
-        with st.chat_message(message["role"]):
-            for block in message["content"]:  # Loop through each block of the message
-                if isinstance(block, TextBlock):
-                    st.markdown(block.text)  # Render text block as markdown
-                elif isinstance(block, ImageBlock):
-                    st.image(block.file_path)  # Render image block from file path
-    
+   
     # Handle new user input and responses
-    if prompt := st.chat_input("Enter your query here:"):
-        # Store user query in session state
-        st.session_state['messages'].append({"role": "user", "content": [TextBlock(text=prompt)]})
-    
-        # Display user query immediately
-        with st.chat_message("user"):
-            st.markdown(prompt)
-    
-        # Process the query and generate response
-        if query_engine:
-            try:
-                response = query_engine.query(prompt)
-    
-                if isinstance(response.response, ReportOutput):
-                    # Store assistant's response as a list of blocks (TextBlock and ImageBlock)
-                    st.session_state['messages'].append({"role": "assistant", "content": response.response.blocks})
-    
-                    # Display assistant's response immediately
-                    with st.chat_message("assistant"):
-                        for block in response.response.blocks:
-                            if isinstance(block, TextBlock):
-                                st.markdown(block.text)  # Render text block
-                            elif isinstance(block, ImageBlock):
-                                st.image(block.file_path)  # Render image block
-                else:
-                    st.markdown("Unexpected response format.")
-    
-            except Exception as e:
-                error_message = f"Error during query execution: {e}"
-                
-                # Store and display the error message
-                st.session_state['messages'].append({"role": "assistant", "content": [TextBlock(text=error_message)]})
+if prompt := st.chat_input("Enter your query here:"):
+    # Store user query in session state
+    st.session_state['messages'].append({"role": "user", "content": [TextBlock(text=prompt)]})
+
+    # Display user query immediately
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    # Process the query and generate response
+    if query_engine:
+        try:
+            response = query_engine.query(prompt)
+
+            if isinstance(response.response, ReportOutput):
+                # Store assistant's response as a list of blocks (TextBlock and ImageBlock)
+                st.session_state['messages'].append({"role": "assistant", "content": response.response.blocks})
+
+                # Display assistant's response immediately
                 with st.chat_message("assistant"):
-                    st.markdown(error_message)
-        else:
-            st.warning("Query engine not initialized.")
-    
-                    with st.chat_message("assistant"):
-                        st.markdown(response_text)
-                    st.session_state['messages'].append({"role": "assistant", "content": response_text})
+                    for block in response.response.blocks:
+                        if isinstance(block, TextBlock):
+                            st.markdown(block.text)  # Render text block
+                        elif isinstance(block, ImageBlock):
+                            st.image(block.file_path)  # Render image block
             else:
-                st.warning("Query engine not initialized.")
+                st.markdown("Unexpected response format.")
+
+        except Exception as e:
+            error_message = f"Error during query execution: {e}"
+            
+            # Store and display the error message
+            st.session_state['messages'].append({"role": "assistant", "content": [TextBlock(text=error_message)]})
+            with st.chat_message("assistant"):
+                st.markdown(error_message)
+    else:
+        st.warning("Query engine not initialized.")
     
