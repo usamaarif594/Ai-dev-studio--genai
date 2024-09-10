@@ -10,7 +10,6 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, Settings
 from llama_parse import LlamaParse
 from pydantic import BaseModel, Field
-from IPython.display import display, Markdown, Image
 
 # Apply nested asyncio to avoid loop errors
 nest_asyncio.apply()
@@ -47,7 +46,7 @@ class ReportOutput(BaseModel):
         for b in self.blocks:
             if isinstance(b, TextBlock):
                 st.markdown(b.text)
-            else:
+            elif isinstance(b, ImageBlock):
                 st.image(b.file_path)
 
 # Streamlit title
