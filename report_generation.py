@@ -10,12 +10,11 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, Settings
 from llama_parse import LlamaParse
 from pydantic import BaseModel, Field
-from IPython.display import display, Markdown, Image
 
 nest_asyncio.apply()
 
 openapi = st.secrets["api_keys"]["openapi"]
-llama_api= st.secrets["api_keys"]["llama_api"]
+llama_api = st.secrets["api_keys"]["llama_api"]
 os.makedirs('data', exist_ok=True)
 os.makedirs('data_images', exist_ok=True)
 
@@ -175,7 +174,7 @@ if text_nodes and index:
                     st.image(b.file_path)
 
     # Initialize LLM and Query Engine
-    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt,api_key=openapi)
+    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt, api_key=openapi)
     sllm = llm.as_structured_llm(output_cls=ReportOutput)
     query_engine = index.as_query_engine(
         similarity_top_k=10,
@@ -184,6 +183,7 @@ if text_nodes and index:
     )
 
     if prompt := st.chat_input("Enter your query here:"):
+        # Add the user query to chat history
         st.session_state['messages'].append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -191,11 +191,15 @@ if text_nodes and index:
         if query_engine:
             try:
                 response = query_engine.query(prompt)
-                # Render the response if it's an instance of ReportOutput
+                # Add the assistant response to chat history
                 if isinstance(response.response, ReportOutput):
-                    response.response.render()
+                    # Render the response
+                    with st.chat_message("assistant"):
+                        st.markdown("Generating report...")
+                        response.response.render()
                 else:
-                    st.markdown("Unexpected response format.")
+                    with st.chat_message("assistant"):
+                        st.markdown("Unexpected response format.")
             except Exception as e:
                 response_text = f"Error during query execution: {e}"
                 
