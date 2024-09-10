@@ -186,15 +186,17 @@ if text_nodes and index:
         response_mode="compact",
     )
 
+
+    
     if prompt := st.chat_input("Enter your query here:"):
         # st.session_state['messages'].append({"role": "user", "content": prompt})
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        if query_engine:
+        if st.session_state['query_engine']:
             try:
-                response = query_engine.query(prompt)
+                response = st.session_state['query_engine'].query(prompt)
                 # Render the response if it's an instance of ReportOutput
                 if isinstance(response.response, ReportOutput):
                     response.response.render()
