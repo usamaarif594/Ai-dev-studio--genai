@@ -174,7 +174,11 @@ if text_nodes and index:
                 if isinstance(b, TextBlock):
                     st.markdown(b.text)
                 elif isinstance(b, ImageBlock):
-                    st.image(b.file_path)
+                    # Ensure image path is correct
+                    if os.path.exists(b.file_path):
+                        st.image(b.file_path)
+                    else:
+                        st.warning(f"Image not found: {b.file_path}")
 
         def to_markdown(self) -> str:
             """Convert the ReportOutput to a markdown string for chat history"""
@@ -207,10 +211,10 @@ if text_nodes and index:
                 response = st.session_state['query_engine'].query(prompt)
                 # Render the response if it's an instance of ReportOutput
                 if isinstance(response.response, ReportOutput):
-                    response_markdown = response.response.to_markdown()
-                    st.session_state['messages'].append({"role": "assistant", "content": response_markdown})
+                    response.response.render()
+                    st.session_state['messages'].append({"role": "assistant", "content": response.response.to_markdown()})
                     with st.chat_message("assistant"):
-                        st.markdown(response_markdown)
+                        st.markdown(response.response.to_markdown())
                 else:
                     st.session_state['messages'].append({"role": "assistant", "content": "Unexpected response format."})
                     with st.chat_message("assistant"):
@@ -219,7 +223,5 @@ if text_nodes and index:
                 st.session_state['messages'].append({"role": "assistant", "content": f"Error: {str(e)}"})
                 with st.chat_message("assistant"):
                     st.markdown(f"Error: {str(e)}")
-        else:
-            st.warning("No query engine initialized. Please upload and parse a document first.")
 else:
     st.warning("No document parsed yet. Please upload and parse a document.")
