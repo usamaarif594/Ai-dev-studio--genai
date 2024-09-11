@@ -15,7 +15,7 @@ from IPython.display import display, Markdown, Image
 nest_asyncio.apply()
 
 openapi = st.secrets["api_keys"]["openapi"]
-llama_api= st.secrets["api_keys"]["llama_api"]
+llama_api = st.secrets["api_keys"]["llama_api"]
 os.makedirs('data', exist_ok=True)
 os.makedirs('data_images', exist_ok=True)
 
@@ -47,7 +47,7 @@ for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# File uploader for PDF files
+# File uploader for a single PDF file
 uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type=["pdf"], accept_multiple_files=False)
 
 def get_page_number(file_name):
@@ -87,44 +87,39 @@ def update_index(text_nodes):
     index.storage_context.persist(persist_dir="./storage_nodes_summary")
     return index
 
-def load_or_create_index():
-    if os.path.exists("storage_nodes_summary"):
-        # Remove old index data
-        for file in Path("storage_nodes_summary").iterdir():
-            os.remove(file)
-    index = update_index(st.session_state['text_nodes'])
-    return index
-
 # Handle file parsing
-if st.sidebar.button("Parse Documents"):
+if st.sidebar.button("Parse Document"):
     if uploaded_file:
-        with st.spinner("Parsing documents, please wait..."):
+        with st.spinner("Parsing document, please wait..."):
             # Clear previous data
             st.session_state['parsed_data'] = None
             st.session_state['text_nodes'] = None
             st.session_state['index'] = None
+            
             # Remove old files from 'data' and 'data_images'
             for file in Path("data").iterdir():
                 os.remove(file)
             for file in Path("data_images").iterdir():
                 os.remove(file)
+            
             # Remove old index if exists
             if os.path.exists("storage_nodes_summary"):
                 for file in Path("storage_nodes_summary").iterdir():
                     os.remove(file)
 
-            for file in uploaded_file:
-                pdf_path = os.path.join("data", file.name)
-                with open(pdf_path, "wb") as f:
-                    f.write(file.getbuffer())
+            pdf_path = os.path.join("data", uploaded_file.name)
+            with open(pdf_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
 
-                md_json_objs = parser.get_json_result([pdf_path])
-                md_json_list = md_json_objs[0]["pages"]
-                image_dicts = parser.get_images(md_json_objs, download_path="data_images")
-                st.session_state['parsed_data'] = md_json_list
-                st.session_state['text_nodes'] = get_text_nodes(md_json_list, "data_images")
-                st.session_state['index'] = update_index(st.session_state['text_nodes'])
-                st.sidebar.success(f"Document {file.name} parsed successfully!")
+            md_json_objs = parser.get_json_result([pdf_path])
+            md_json_list = md_json_objs[0]["pages"]
+            image_dicts = parser.get_images(md_json_objs, download_path="data_images")
+            
+            st.session_state['parsed_data'] = md_json_list
+            st.session_state['text_nodes'] = get_text_nodes(md_json_list, "data_images")
+            st.session_state['index'] = update_index(st.session_state['text_nodes'])
+            
+            st.sidebar.success(f"Document {uploaded_file.name} parsed successfully!")
     else:
         st.warning("Please upload a PDF file first.")
 
@@ -175,7 +170,7 @@ if text_nodes and index:
                     st.image(b.file_path)
 
     # Initialize LLM and Query Engine
-    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt,api_key=openapi)
+    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt, api_key=openapi)
     sllm = llm.as_structured_llm(output_cls=ReportOutput)
     query_engine = index.as_query_engine(
         similarity_top_k=10,
@@ -203,4 +198,4 @@ if text_nodes and index:
                     st.markdown(response_text)
                 st.session_state['messages'].append({"role": "assistant", "content": response_text})
         else:
-            st.warning("Query engine not initialized.") 
+            st.warning("Query engine not initialized.")
