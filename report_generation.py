@@ -42,9 +42,18 @@ if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 
 # Display chat messages from history
+# Display chat messages from history
 for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        if isinstance(message["content"], ReportOutput):
+            for block in message["content"].blocks:
+                if isinstance(block, TextBlock):
+                    st.markdown(block.text)
+                elif isinstance(block, ImageBlock):
+                    st.image(block.file_path)
+        else:
+            st.markdown(message["content"])
+
 
 # File uploader for PDF files
 uploaded_files = st.sidebar.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
@@ -189,24 +198,37 @@ if text_nodes and index:
         response_mode="compact",
     )
 
-    if prompt := st.chat_input("Enter your query here:"):
-        st.session_state['messages'].append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+if prompt := st.chat_input("Enter your query here:"):
+    st.session_state['messages'].append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        if query_engine:
-            try:
-                response = query_engine.query(prompt)
-                # Render the response if it's an instance of ReportOutput
-                if isinstance(response.response, ReportOutput):
-                    response.response.render()
-                else:
-                    st.markdown("Unexpected response format.")
-            except Exception as e:
-                response_text = f"Error during query execution: {e}"
+    if query_engine:
+        try:
+            response = query_engine.query(prompt)
+            
+            # If response is an instance of ReportOutput, store it completely
+            if isinstance(response.response, ReportOutput):
+                # Store the entire response for history
+                st.session_state['messages'].append({
+                    "role": "assistant",
+                    "content": response.response
+                })
                 
+                # Render the response immediately
                 with st.chat_message("assistant"):
-                    st.markdown(response_text)
-                st.session_state['messages'].append({"role": "assistant", "content": response_text})
-        else:
-            st.warning("Query engine not initialized.")
+                    for block in response.response.blocks:
+                        if isinstance(block, TextBlock):
+                            st.markdown(block.text)
+                        elif isinstance(block, ImageBlock):
+                            st.image(block.file_path)
+            else:
+                st.markdown("Unexpected response format.")
+        except Exception as e:
+            response_text = f"Error during query execution: {e}"
+            with st.chat_message("assistant"):
+                st.markdown(response_text)
+            st.session_state['messages'].append({"role": "assistant", "content": response_text})
+    else:
+        st.warning("Query engine not initialized.")
+
