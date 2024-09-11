@@ -188,9 +188,11 @@ if text_nodes and index:
         llm=sllm,
         response_mode="compact",
     )
+# Display chat messages from history
 for message in st.session_state['messages']:
     with st.chat_message(message["role"]):
         if isinstance(message["content"], ReportOutput):
+            # Render each block in the stored ReportOutput
             for block in message["content"].blocks:
                 if isinstance(block, TextBlock):
                     st.markdown(block.text)
@@ -198,6 +200,7 @@ for message in st.session_state['messages']:
                     st.image(block.file_path)
         else:
             st.markdown(message["content"])
+
 if prompt := st.chat_input("Enter your query here:"):
     st.session_state['messages'].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -209,7 +212,7 @@ if prompt := st.chat_input("Enter your query here:"):
             
             # If response is an instance of ReportOutput, store it completely
             if isinstance(response.response, ReportOutput):
-                # Store the entire response for history
+                # Store the entire response object
                 st.session_state['messages'].append({
                     "role": "assistant",
                     "content": response.response
