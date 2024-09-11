@@ -98,33 +98,35 @@ def load_or_create_index():
 # Handle file parsing
 if st.sidebar.button("Parse Documents"):
     if uploaded_file:
-        with st.spinner("Parsing documents, please wait..."):
-            # Clear previous data
-            st.session_state['parsed_data'] = None
-            st.session_state['text_nodes'] = None
-            st.session_state['index'] = None
-            # Remove old files from 'data' and 'data_images'
-            for file in Path("data").iterdir():
-                os.remove(file)
-            for file in Path("data_images").iterdir():
-                os.remove(file)
-            # Remove old index if exists
-            if os.path.exists("storage_nodes_summary"):
-                for file in Path("storage_nodes_summary").iterdir():
+        for file in uploaded_file:
+            parse_single_document(file)
+            with st.spinner("Parsing documents, please wait..."):
+                # Clear previous data
+                st.session_state['parsed_data'] = None
+                st.session_state['text_nodes'] = None
+                st.session_state['index'] = None
+                # Remove old files from 'data' and 'data_images'
+                for file in Path("data").iterdir():
                     os.remove(file)
-
-            for file in uploaded_file:
-                pdf_path = os.path.join("data", file.name)
-                with open(pdf_path, "wb") as f:
-                    f.write(file.getbuffer())
-
-                md_json_objs = parser.get_json_result([pdf_path])
-                md_json_list = md_json_objs[0]["pages"]
-                image_dicts = parser.get_images(md_json_objs, download_path="data_images")
-                st.session_state['parsed_data'] = md_json_list
-                st.session_state['text_nodes'] = get_text_nodes(md_json_list, "data_images")
-                st.session_state['index'] = update_index(st.session_state['text_nodes'])
-                st.sidebar.success(f"Document {file.name} parsed successfully!")
+                for file in Path("data_images").iterdir():
+                    os.remove(file)
+                # Remove old index if exists
+                if os.path.exists("storage_nodes_summary"):
+                    for file in Path("storage_nodes_summary").iterdir():
+                        os.remove(file)
+    
+                for file in uploaded_file:
+                    pdf_path = os.path.join("data", file.name)
+                    with open(pdf_path, "wb") as f:
+                        f.write(file.getbuffer())
+    
+                    md_json_objs = parser.get_json_result([pdf_path])
+                    md_json_list = md_json_objs[0]["pages"]
+                    image_dicts = parser.get_images(md_json_objs, download_path="data_images")
+                    st.session_state['parsed_data'] = md_json_list
+                    st.session_state['text_nodes'] = get_text_nodes(md_json_list, "data_images")
+                    st.session_state['index'] = update_index(st.session_state['text_nodes'])
+                    st.sidebar.success(f"Document {file.name} parsed successfully!")
     else:
         st.warning("Please upload a PDF file first.")
 
