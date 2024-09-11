@@ -10,11 +10,12 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, Settings
 from llama_parse import LlamaParse
 from pydantic import BaseModel, Field
+from IPython.display import display, Markdown, Image
 
 nest_asyncio.apply()
 
 openapi = st.secrets["api_keys"]["openapi"]
-llama_api = st.secrets["api_keys"]["llama_api"]
+llama_api= st.secrets["api_keys"]["llama_api"]
 os.makedirs('data', exist_ok=True)
 os.makedirs('data_images', exist_ok=True)
 
@@ -30,10 +31,10 @@ st.title('Multimodel Report Generation from Slide Deck')
 
 # Initialize session state
 if 'parsed_data' not in st.session_state:
-    st.session_state['parsed_data'] = []
+    st.session_state['parsed_data'] = None
 
 if 'text_nodes' not in st.session_state:
-    st.session_state['text_nodes'] = []
+    st.session_state['text_nodes'] = None
 
 if 'index' not in st.session_state:
     st.session_state['index'] = None
@@ -47,7 +48,7 @@ for message in st.session_state['messages']:
         st.markdown(message["content"])
 
 # File uploader for PDF files
-uploaded_files = st.sidebar.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
+uploaded_file = st.sidebar.file_uploader("Upload a PDF file", type=["pdf"], accept_multiple_files=False)
 
 def get_page_number(file_name):
     """Gets page number of images using regex on file names"""
@@ -96,13 +97,12 @@ def load_or_create_index():
 
 # Handle file parsing
 if st.sidebar.button("Parse Documents"):
-    if uploaded_files:
+    if uploaded_file:
         with st.spinner("Parsing documents, please wait..."):
             # Clear previous data
-            st.session_state['parsed_data'] = []
-            st.session_state['text_nodes'] = []
+            st.session_state['parsed_data'] = None
+            st.session_state['text_nodes'] = None
             st.session_state['index'] = None
-
             # Remove old files from 'data' and 'data_images'
             for file in Path("data").iterdir():
                 os.remove(file)
@@ -113,28 +113,22 @@ if st.sidebar.button("Parse Documents"):
                 for file in Path("storage_nodes_summary").iterdir():
                     os.remove(file)
 
-            # Process each uploaded file
-            for file in uploaded_files:
+            for file in uploaded_file:
                 pdf_path = os.path.join("data", file.name)
                 with open(pdf_path, "wb") as f:
                     f.write(file.getbuffer())
 
-                # Parse the document and extract markdown and images
                 md_json_objs = parser.get_json_result([pdf_path])
                 md_json_list = md_json_objs[0]["pages"]
                 image_dicts = parser.get_images(md_json_objs, download_path="data_images")
-
-                # Append parsed data and text nodes to session state
-                st.session_state['parsed_data'].extend(md_json_list)
-                st.session_state['text_nodes'].extend(get_text_nodes(md_json_list, "data_images"))
-
-            # Update index after processing all files
-            st.session_state['index'] = update_index(st.session_state['text_nodes'])
-            st.sidebar.success("Documents parsed successfully!")
+                st.session_state['parsed_data'] = md_json_list
+                st.session_state['text_nodes'] = get_text_nodes(md_json_list, "data_images")
+                st.session_state['index'] = update_index(st.session_state['text_nodes'])
+                st.sidebar.success(f"Document {file.name} parsed successfully!")
     else:
-        st.warning("Please upload PDF files first.")
+        st.warning("Please upload a PDF file first.")
 
-# Only proceed if the documents have been parsed
+# Only proceed if the document has been parsed
 text_nodes = st.session_state['text_nodes'] if 'text_nodes' in st.session_state else None
 index = st.session_state['index'] if 'index' in st.session_state else None
 
@@ -181,7 +175,7 @@ if text_nodes and index:
                     st.image(b.file_path)
 
     # Initialize LLM and Query Engine
-    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt, api_key=openapi)
+    llm = OpenAI(model="gpt-4o", system_prompt=system_prompt,api_key=openapi)
     sllm = llm.as_structured_llm(output_cls=ReportOutput)
     query_engine = index.as_query_engine(
         similarity_top_k=10,
@@ -209,4 +203,4 @@ if text_nodes and index:
                     st.markdown(response_text)
                 st.session_state['messages'].append({"role": "assistant", "content": response_text})
         else:
-            st.warning("Query engine not initialized.")
+            st.warning("Query engine not initialized.") 
