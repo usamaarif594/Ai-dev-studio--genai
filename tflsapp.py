@@ -355,7 +355,7 @@ with tab1:
 
     # Sidebar - let user choose model, show total cost of current conversation, and let user clear the current conversation
     
-    model_name = st.sidebar.radio("Choose a model:", ("GPT-3.5", "GPT-4"))
+    model_name = st.sidebar.radio("Choose a model for Chatbot:", ("GPT-3.5", "GPT-4"))
     counter_placeholder = st.sidebar.empty()
     # counter_placeholder.write(f"Total cost of this conversation: ${st.session_state['total_cost']:.5f}")
     clear_button = st.sidebar.button("Clear Conversation", key="clear")
