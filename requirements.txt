@@ -6,4 +6,4 @@ streamlit_chat
 openai
 lifelines
 openpyxl
-matplotlib.pyplot
+
