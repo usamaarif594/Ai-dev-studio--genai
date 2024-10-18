@@ -7,4 +7,5 @@ openai==0.28
 lifelines
 openpyxl
 plotly
+xport
 
