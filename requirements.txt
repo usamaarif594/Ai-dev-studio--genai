@@ -3,7 +3,7 @@ llama_parse
 llama_index
 ipython
 streamlit_chat
-openai==1.52.0
+openai==0.28
 lifelines
 openpyxl
 
