@@ -4,3 +4,4 @@ llama_index
 ipython
 streamlit_chat
 openai
+lifelines
