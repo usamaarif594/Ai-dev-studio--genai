@@ -2,3 +2,5 @@ streamlit
 llama_parse
 llama_index
 ipython
+streamlit_chat
+openai
