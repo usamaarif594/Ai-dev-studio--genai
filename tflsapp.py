@@ -32,7 +32,9 @@ uploaded_file = st.sidebar.file_uploader("Upload a file", type=['csv', 'xpt','xl
 
 if uploaded_file is not None:
     # Read the uploaded dataset based on the file type
-    
+    file_path = uploaded_file.name
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
     if uploaded_file.name.endswith('.xpt'):
         df = pd.read_sas(uploaded_file, format='xport')
 
