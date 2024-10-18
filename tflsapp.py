@@ -12,7 +12,18 @@ from streamlit_chat import message
 
 openai.api_key = st.secrets["openai"]["api_key"]
 
+def show_startup_message():
+    with st.expander("Welcome!", expanded=True):
+        st.write("Please Upload the Dataset to make TFLs.")
+        st.write("Feel free to explore the app!")
 
+# Call the function to display the message on app start
+if 'show_message' not in st.session_state:
+    st.session_state['show_message'] = True
+
+if st.session_state['show_message']:
+    show_startup_message()
+    st.session_state['show_message'] = False  # Set to False to prevent showing it again
 # Tabs in Streamlit
 tab1,tab2, tab3, tab4 = st.tabs(['Chatbot For Queries','Biostatistician', 'Programmer', 'Statistical Programmer'])
 
