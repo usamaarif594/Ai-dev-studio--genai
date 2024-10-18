@@ -14,8 +14,8 @@ openai.api_key = st.secrets["openai"]["api_key"]
 
 def show_startup_message():
     with st.expander("Welcome!", expanded=True):
-        st.write("Please Upload the Dataset to make TFLs.")
-        st.write("Feel free to explore the app!")
+        st.warning("Please Upload the Dataset to make TFLs.")
+        st.success("Feel free to explore the app!")
 
 # Call the function to display the message on app start
 if 'show_message' not in st.session_state:
