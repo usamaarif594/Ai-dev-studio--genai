@@ -6,4 +6,5 @@ streamlit_chat
 openai==0.28
 lifelines
 openpyxl
+plotly
 
