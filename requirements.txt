@@ -1,3 +1,5 @@
+
+langchain-community
 streamlit
 llama_parse
 llama_index
